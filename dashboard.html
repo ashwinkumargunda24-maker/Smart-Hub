@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SmartHub Dashboard</title>
+<link rel="stylesheet" href="/css/style.css">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="container mt-4">
+<h2>SmartHub IoT Dashboard</h2>
+<h5>Plot Number: <span id="plotNumber">—</span></h5>
+<a href="/logout" class="btn btn-danger mb-3">Logout</a>
+<!-- SENSOR CARDS -->
+<div class="row">
+<div class="col-md-4">
+<div class="dashboard-card">
+<h4>🌡 Temperature</h4>
+<h2 id="tempValue">-- °C</h2>
+</div>
+</div>
+<div class="col-md-4">
+<div class="dashboard-card">
+<h4>💧 Humidity</h4>
+<h2 id="humidity">-- %</h2>
+</div>
+</div>
+<div class="col-md-4">
+<div class="dashboard-card">
+<h4>⚡ Energy Usage</h4>
+<h2 id="energy">-- kWh</h2>
+</div>
+</div>
+</div>
+<!-- DEVICE CONTROL -->
+<h4 class="mt-4">Device Controls</h4>
+<div class="row">
+<div class="col-md-3">
+<button class="btn btn-warning w-100" onclick="toggleLight()">💡 Toggle Light</button>
+</div>
+<div class="col-md-3">
+<button class="btn btn-info w-100" onclick="toggleAC()">❄ Toggle AC</button>
+</div>
+</div>
+<p class="mt-2">Light Status: <span id="lightStatus">OFF</span></p>
+<p>AC Status: <span id="acStatus">OFF</span></p>
+<!-- GRAPH -->
+<h4 class="mt-4">Temperature Graph</h4>
+<canvas id="tempChart"></canvas>
+<!-- TABLE -->
+<h4 class="mt-4">Sensor Data Table</h4>
+<table class="table table-bordered">
+<thead>
+<tr>
+<th>Time</th>
+<th>Temperature</th>
+<th>Humidity</th>
+<th>Energy</th>
+</tr>
+</thead>
+<tbody id="tableData"></tbody>
+</table>
+<!-- WARNING -->
+<div id="warning" class="alert alert-danger d-none">
+⚠ High Temperature Detected!
+</div>
+</div>
+<!-- ALERT SOUND -->
+<audio id="alertSound">
+<source src="/sound/alert.mp3" type="audio/mpeg">
+</audio>
+<script>
+fetch("/api/me").then(function(r){ return r.ok ? r.json() : null }).then(function(me){
+if(me && me.plot){ document.getElementById("plotNumber").innerText = me.plot }
+}).catch(function(){});
+const ctx=document.getElementById("tempChart")
+let temps=[]
+let labels=[]
+const chart=new Chart(ctx,{
+type:"line",
+data:{
+labels:labels,
+datasets:[{
+label:"Temperature",
+data:temps,
+borderWidth:2
+}]
+}
+})
+function generateData(){
+const temp=Math.floor(Math.random()*45)
+const humidity=Math.floor(Math.random()*100)
+const energy=Math.floor(Math.random()*500)
+document.getElementById("tempValue").innerText=temp+" °C"
+document.getElementById("humidity").innerText=humidity+" %"
+document.getElementById("energy").innerText=energy+" kWh"
+const time=new Date().toLocaleTimeString()
+labels.push(time)
+temps.push(temp)
+if(labels.length>10){
+labels.shift()
+temps.shift()
+}
+chart.update()
+const table=document.getElementById("tableData")
+const row=`<tr>
+<td>${time}</td>
+<td>${temp}</td>
+<td>${humidity}</td>
+<td>${energy}</td>
+</tr>`
+table.innerHTML=row+table.innerHTML
+var warningEl = document.getElementById("warning");
+if (temp > 35) {
+  warningEl.classList.remove("d-none");
+  var sound = document.getElementById("alertSound");
+  if (sound) { sound.play().catch(function() {}); }
+} else {
+  warningEl.classList.add("d-none");
+}
+}
+setInterval(generateData,3000)
+function toggleLight(){
+const status=document.getElementById("lightStatus")
+status.innerText=status.innerText==="OFF"?"ON":"OFF"
+}
+function toggleAC(){
+const status=document.getElementById("acStatus")
+status.innerText=status.innerText==="OFF"?"ON":"OFF"
+}
+</script>
+</body>
+</html>
